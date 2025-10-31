@@ -19,8 +19,20 @@ public class SqlTracker implements Store {
     }
 
     private void init() {
+        System.out.println("Текущая директория: " + System.getProperty("user.dir"));
+        System.out.println("Classpath: " + System.getProperty("java.class.path"));
+
+        // Проверим, какие ресурсы доступны
+        java.net.URL resourceUrl = SqlTracker.class.getClassLoader().getResource("app.properties");
+        System.out.println("URL ресурса: " + resourceUrl);
+
         try (InputStream input = SqlTracker.class.getClassLoader()
                 .getResourceAsStream("app.properties")) {
+
+            if (input == null) {
+                throw new IllegalStateException("Файл app.properties не найден. URL: " + resourceUrl);
+            }
+
             Properties config = new Properties();
             config.load(input);
             Class.forName(config.getProperty("driver-class-name"));
@@ -29,11 +41,11 @@ public class SqlTracker implements Store {
                     config.getProperty("username"),
                     config.getProperty("password")
             );
+            System.out.println("Подключение к БД установлено успешно!");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
     }
-
 
 
     @Override
@@ -94,11 +106,7 @@ public class SqlTracker implements Store {
         try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM items")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    items.add(new Item(
-                            resultSet.getInt("id"),
-                            resultSet.getString("name"),
-                            resultSet.getTimestamp("created").toLocalDateTime()
-                    ));
+                    items.add(createItem(resultSet));
                 }
             }
         } catch (Exception e) {
@@ -114,11 +122,7 @@ public class SqlTracker implements Store {
             statement.setString(1, key);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    result.add(new Item(
-                            resultSet.getInt("id"),
-                            resultSet.getString("name"),
-                            resultSet.getTimestamp("created").toLocalDateTime()
-                    ));
+                    result.add(createItem(resultSet));
                 }
             }
         } catch (Exception e) {
@@ -134,16 +138,20 @@ public class SqlTracker implements Store {
             statement.setInt(1, id);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    item = new Item(
-                            resultSet.getInt("id"),
-                            resultSet.getString("name"),
-                            resultSet.getTimestamp("created").toLocalDateTime()
-                    );
+                    item = createItem(resultSet);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return item;
+    }
+
+    private Item createItem(ResultSet resultSet) throws SQLException {
+        return new Item(
+                resultSet.getInt("id"),
+                resultSet.getString("name"),
+                resultSet.getTimestamp("created").toLocalDateTime()
+        );
     }
 }
