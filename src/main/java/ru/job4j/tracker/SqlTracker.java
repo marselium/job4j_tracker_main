@@ -19,15 +19,9 @@ public class SqlTracker implements Store {
     }
 
     private void init() {
-        System.out.println("Текущая директория: " + System.getProperty("user.dir"));
-        System.out.println("Classpath: " + System.getProperty("java.class.path"));
-
-        // Проверим, какие ресурсы доступны
-        java.net.URL resourceUrl = SqlTracker.class.getClassLoader().getResource("app.properties");
-        System.out.println("URL ресурса: " + resourceUrl);
-
-        try (InputStream input = SqlTracker.class.getClassLoader()
-                .getResourceAsStream("app.properties")) {
+        java.net.URL resourceUrl = SqlTracker.class.getClassLoader().getResource("db/liquibase.properties");
+        try (InputStream input =
+                     SqlTracker.class.getClassLoader().getResourceAsStream("db/liquibase.properties")) {
 
             if (input == null) {
                 throw new IllegalStateException("Файл app.properties не найден. URL: " + resourceUrl);
@@ -41,7 +35,6 @@ public class SqlTracker implements Store {
                     config.getProperty("username"),
                     config.getProperty("password")
             );
-            System.out.println("Подключение к БД установлено успешно!");
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
